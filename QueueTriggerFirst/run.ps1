@@ -6,7 +6,7 @@ Write-Host "PowerShell queue trigger function processed work item: $QueueItem"
 Write-Host "Queue item insertion time: $($TriggerMetadata.InsertionTime)"
 
 # Create a context object using Azure AD credentials
-$ctx = New-AzStorageContext -Endpoint $env:StorageAccountEndpoint -UseConnectedAccount
+$ctx = New-AzStorageContext -StorageAccountName $env:StorageAccountName -UseConnectedAccount
 
 Get-AzStorageContainer -Context $ctx
 Write-Host
