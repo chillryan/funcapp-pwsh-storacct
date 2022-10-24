@@ -12,6 +12,7 @@ param appName string = uniqueString(resourceGroup().id)
 ])
 param functionAppPlanSku string = 'EP1'
 
+@description('The name of the vnet the function app will be integrated to')
 param vnetName string
 
 var hostPlanNmae = 'plan-${appName}-${location}'
@@ -24,10 +25,6 @@ resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@
   location: location
 }
 
-resource vnet 'Microsoft.Network/virtualNetworks@2021-05-01' existing = {
-  name: vnetName
-}
-
 resource storageAccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
   name: storageAcountName
   location: location
@@ -37,6 +34,12 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
   }
   properties: {
     accessTier: 'Cool'
+  }
+
+  resource messageQueue 'queueServices' = {
+    name: 'js-queue-items'
+    properties: {      
+    }
   }
 }
 
@@ -50,20 +53,19 @@ resource hostingPlan 'Microsoft.Web/serverfarms@2020-12-01' = {
   properties: {}
 }
 
-resource funcApp 'Microsoft.Web/sites@2020-12-01' = {
+resource function 'Microsoft.Web/sites@2020-12-01' = {
   name: functionAppName
   location: location
   kind: 'functionapp'
   identity: {
     type: 'SystemAssigned, UserAssigned'
     userAssignedIdentities: {
-      '${userAssignedIdentity}': {
+      '${userAssignedIdentity.id}': {
       }
     }
   }
   properties: {
     serverFarmId: hostingPlan.id
-    virtualNetworkSubnetId: vnet.properties.subnets[0].id
     siteConfig: {
       appSettings: [
         {
@@ -104,9 +106,21 @@ resource funcApp 'Microsoft.Web/sites@2020-12-01' = {
         }
       ]
       powerShellVersion: '7.2'
-      vnetName: vnet.name
+      vnetRouteAllEnabled: true
     }
   }
+
+  resource networkConfig 'networkConfig' = {
+    name: 'virtualNetwork'
+    properties: {
+      subnetResourceId: vnet.properties.subnets[0].id
+      swiftSupported: true
+    }
+  }
+
+  dependsOn: [
+    vnet
+  ]
 }
 
 resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
@@ -118,21 +132,25 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
   }
 }
 
-@description('This is the built-in Contributor role. See https://docs.microsoft.com/azure/role-based-access-control/built-in-roles#contributor')
-resource storageQueueContirbutorRole 'Microsoft.Authorization/roleAssignments@2022-04-01' existing = {
-  scope: resourceGroup()
-  name: '974c5e8b-45b9-4653-ba55-5f855dd0fb88'
-}
+// @description('This is the built-in Contributor role. See https://docs.microsoft.com/azure/role-based-access-control/built-in-roles#contributor')
+// resource storageQueueContirbutorRole 'Microsoft.Authorization/roleAssignments@2022-04-01' existing = {
+//   scope: resourceGroup()
+//   name: '974c5e8b-45b9-4653-ba55-5f855dd0fb88'
+// }
 
-resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  scope: storageAccount
-  name: guid(storageAccount.id, userAssignedIdentity.name, storageQueueContirbutorRole.id)
-  properties: {
-    principalId: userAssignedIdentity.properties.principalId
-    roleDefinitionId: storageQueueContirbutorRole.id
-    principalType: 'User'
-  }
+// resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+//   scope: storageAccount
+//   name: guid(storageAccount.id, userAssignedIdentity.name, storageQueueContirbutorRole.id)
+//   properties: {
+//     principalId: userAssignedIdentity.properties.principalId
+//     roleDefinitionId: storageQueueContirbutorRole.id
+//     principalType: 'User'
+//   }
+// }
+
+resource vnet 'Microsoft.Network/virtualNetworks@2021-05-01' existing = {
+  name: vnetName
 }
 
 output storageAccountName string = storageAccount.name
-output functionAppName string = funcApp.name
+output functionAppName string = function.name
