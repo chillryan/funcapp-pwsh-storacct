@@ -75,6 +75,10 @@ resource function 'Microsoft.Web/sites@2020-12-01' = {
           value: storageAccount.name
         }
         {
+          name: 'ResourceGroupName'
+          value: resourceGroup().name
+        }
+        {
           name: 'ClientId'
           value: mi.properties.clientId
         }

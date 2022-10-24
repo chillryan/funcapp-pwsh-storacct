@@ -8,7 +8,7 @@ Write-Host "Queue item insertion time: $($TriggerMetadata.InsertionTime)"
 Get-Module -Name Az -ListAvailable -All
 
 # Create a context object using Azure AD credentials
-# $ctx = $(Get-AzStorageAccount -ResourceGroupName rg-ryhill-azfuncpwsh-poc).Context
+# $ctx = $(Get-AzStorageAccount -ResourceGroupName $env:ResourceGroupName -Name $env:StorageAccountName).Context
 $ctx = New-AzStorageContext -StorageAccountName $env:StorageAccountName -UseConnectedAccount
 
 # Queue operations
