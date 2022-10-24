@@ -6,18 +6,42 @@ param resourceBase string = 'azfuncpwshpoc'
 @description('The location where the resources will be deployed')
 param location string
 
-resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+@description('Specify the Azure Function hosting plan SKU')
+@allowed([
+  'Y1'
+  'EP1'
+  'EP2'
+])
+param planSku string = 'EP1'
+
+@description('Use private endpoints')
+param usePrivateEndpoint bool = false
+
+resource newRG 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: 'rg-${resourceBase}'
   location: location
 }
 
-module func 'func.bicep' = {
-  name: 'func'
-  scope: resourceGroup(rg.name)
+module vnetModule 'vnet.bicep' = {
+  name: '${deployment().name}-vnetDeploy'
+  scope: newRG
   params: {
     location: location
   }
 }
 
-output storageAccountName string = func.outputs.storageAccountName
-output functionAppName string = func.outputs.functionAppName
+module funcModule 'func.bicep' = {
+  name: '${deployment().name}-functionDeploy'
+  scope: newRG
+  params: {
+    location: location
+    functionAppPlanSku: planSku
+    vnetName: vnetModule.outputs.vnetName
+  }
+  dependsOn: [
+    vnetModule
+  ]
+}
+
+output storageAccountName string = funcModule.outputs.storageAccountName
+output functionAppName string = funcModule.outputs.functionAppName
