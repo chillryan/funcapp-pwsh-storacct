@@ -17,10 +17,10 @@ param vnetName string
 
 var hostPlanNmae = 'plan-${appName}-${location}'
 var functionAppName = 'func${appName}'
-var storageAcountName = 'st${replace(appName,'-','')}'
+var storageAcountName = 'st${replace(appName, '-', '')}'
 var appInsightsName = 'appi${appName}'
 
-resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
+resource mi 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
   name: 'id${appName}'
   location: location
 }
@@ -35,12 +35,10 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
   properties: {
     accessTier: 'Cool'
   }
+}
 
-  resource messageQueue 'queueServices' = {
-    name: 'js-queue-items'
-    properties: {      
-    }
-  }
+resource queue 'Microsoft.Storage/storageAccounts/queueServices/queues@2021-02-01' = {
+  name: '${storageAccount.name}/default/js-queue-items'
 }
 
 resource hostingPlan 'Microsoft.Web/serverfarms@2020-12-01' = {
@@ -60,7 +58,7 @@ resource function 'Microsoft.Web/sites@2020-12-01' = {
   identity: {
     type: 'SystemAssigned, UserAssigned'
     userAssignedIdentities: {
-      '${userAssignedIdentity.id}': {
+      '${mi.id}': {
       }
     }
   }
@@ -78,7 +76,7 @@ resource function 'Microsoft.Web/sites@2020-12-01' = {
         }
         {
           name: 'ClientId'
-          value: userAssignedIdentity.properties.principalId
+          value: mi.properties.clientId
         }
         {
           name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
@@ -132,21 +130,19 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
   }
 }
 
-// @description('This is the built-in Contributor role. See https://docs.microsoft.com/azure/role-based-access-control/built-in-roles#contributor')
-// resource storageQueueContirbutorRole 'Microsoft.Authorization/roleAssignments@2022-04-01' existing = {
-//   scope: resourceGroup()
-//   name: '974c5e8b-45b9-4653-ba55-5f855dd0fb88'
-// }
+// See https://docs.microsoft.com/azure/role-based-access-control/built-in-roles#contributor'
+var roleDefinitionId = resourceId('Microsoft.Authorization/roleDefinitions', '974c5e8b-45b9-4653-ba55-5f855dd0fb88')
+var roleAssignmentName = guid(resourceGroup().id, mi.name, roleDefinitionId)
 
-// resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-//   scope: storageAccount
-//   name: guid(storageAccount.id, userAssignedIdentity.name, storageQueueContirbutorRole.id)
-//   properties: {
-//     principalId: userAssignedIdentity.properties.principalId
-//     roleDefinitionId: storageQueueContirbutorRole.id
-//     principalType: 'User'
-//   }
-// }
+resource miRoleAssign 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: storageAccount
+  name: roleAssignmentName
+  properties: {
+    principalId: mi.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: roleDefinitionId
+  }
+}
 
 resource vnet 'Microsoft.Network/virtualNetworks@2021-05-01' existing = {
   name: vnetName

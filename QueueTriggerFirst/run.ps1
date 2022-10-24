@@ -8,12 +8,13 @@ Write-Host "Queue item insertion time: $($TriggerMetadata.InsertionTime)"
 Get-Module -Name Az -ListAvailable -All
 
 # Create a context object using Azure AD credentials
-$ctx = $(Get-AzStorageAccount -ResourceGroupName rg-ryhill-azfuncpwsh-poc).Context
-# $ctx = New-AzStorageContext -StorageAccountName $env:StorageAccountName -UseConnectedAccount
+# $ctx = $(Get-AzStorageAccount -ResourceGroupName rg-ryhill-azfuncpwsh-poc).Context
+$ctx = New-AzStorageContext -StorageAccountName $env:StorageAccountName -UseConnectedAccount
 
 # Queue operations
 $queueName = "psfunc-message-archive"
-$queue = New-AzStorageQueue -Name $queueName -Context $ctx
+$queue = Get-AzStorageQueue -Name $queueName -Context $ctx
 
 # Create a new message using a constructor of the CloudQueueMessage class
-$queue.CloudQueue.AddMessageAsync("Archiving message: $($QueueItem)")
+$archiveMessage = [Microsoft.Azure.Storage.Queue.CloudQueueMessage]::new("Archiving message: $($QueueItem)", $false)
+$queue.CloudQueue.AddMessageAsync($archiveMessage)
