@@ -23,7 +23,7 @@ resource newRG 'Microsoft.Resources/resourceGroups@2021-04-01' = {
 }
 
 module vnetModule 'vnet.bicep' = {
-  name: '${deployment().name}-vnetDeploy'
+  name: '${deployment().name}-deploy-vnet'
   scope: newRG
   params: {
     location: location
@@ -31,7 +31,7 @@ module vnetModule 'vnet.bicep' = {
 }
 
 module funcModule 'func.bicep' = {
-  name: '${deployment().name}-functionDeploy'
+  name: '${deployment().name}-deploy-function'
   scope: newRG
   params: {
     location: location
