@@ -5,12 +5,15 @@ param([string] $QueueItem, $TriggerMetadata)
 Write-Host "PowerShell queue trigger function processed work item: $QueueItem"
 Write-Host "Queue item insertion time: $($TriggerMetadata.InsertionTime)"
 
-
-$queueName = "js-queue-items-archive"
-$queueMessage = [Microsoft.Azure.Storage.Queue.CloudQueueMessage]::new("Archiving message: $($QueueItem)")
+Get-Module -Name Az -ListAvailable -All
 
 # Create a context object using Azure AD credentials
-$ctx = New-AzStorageContext -StorageAccountName $env:StorageAccountName -UseConnectedAccount
-Get-AzStorageQueue -Context $ctx | Select-Object Name
-$queue = Get-AzStorageQueue -Name $queueName -Context $ctx
-$queue.CloudQueue.AddMessageAsync($queueMessage)
+$ctx = $(Get-AzStorageAccount -ResourceGroupName rg-ryhill-azfuncpwsh-poc).Context
+# $ctx = New-AzStorageContext -StorageAccountName $env:StorageAccountName -UseConnectedAccount
+
+# Queue operations
+$queueName = "psfunc-message-archive"
+$queue = New-AzStorageQueue -Name $queueName -Context $ctx
+
+# Create a new message using a constructor of the CloudQueueMessage class
+$queue.CloudQueue.AddMessageAsync("Archiving message: $($QueueItem)")
