@@ -1,8 +1,8 @@
-@description('Location for all resources.')
+param subnetId string
+param storageAccountName string
 param location string = resourceGroup().location
-
-@description('The name of the function app that you wish to create.')
 param appName string = uniqueString(resourceGroup().id)
+param contentShareName string = '${appName}-content'
 
 @description('Specify the Azure Function hosting plan SKU')
 @allowed([
@@ -12,33 +12,14 @@ param appName string = uniqueString(resourceGroup().id)
 ])
 param functionAppPlanSku string = 'EP1'
 
-@description('The name of the vnet the function app will be integrated to')
-param vnetName string
 
 var hostPlanNmae = 'plan-${appName}-${location}'
 var functionAppName = 'func${appName}'
-var storageAcountName = 'st${replace(appName, '-', '')}'
 var appInsightsName = 'appi${appName}'
 
 resource mi 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
   name: 'id${appName}'
   location: location
-}
-
-resource storageAccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
-  name: storageAcountName
-  location: location
-  kind: 'StorageV2'
-  sku: {
-    name: 'Standard_LRS'
-  }
-  properties: {
-    accessTier: 'Cool'
-  }
-}
-
-resource queue 'Microsoft.Storage/storageAccounts/queueServices/queues@2021-02-01' = {
-  name: '${storageAccount.name}/default/js-queue-items'
 }
 
 resource hostingPlan 'Microsoft.Web/serverfarms@2020-12-01' = {
@@ -49,6 +30,15 @@ resource hostingPlan 'Microsoft.Web/serverfarms@2020-12-01' = {
     tier: functionAppPlanSku == 'Y1' ? 'Dynamic' : 'ElasticPremium'
   }
   properties: {}
+}
+
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: appInsightsName
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+  }
 }
 
 resource function 'Microsoft.Web/sites@2020-12-01' = {
@@ -88,7 +78,7 @@ resource function 'Microsoft.Web/sites@2020-12-01' = {
         }
         {
           name: 'WEBSITE_CONTENTSHARE'
-          value: toLower(appName)
+          value: contentShareName
         }
         {
           name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
@@ -112,25 +102,12 @@ resource function 'Microsoft.Web/sites@2020-12-01' = {
     }
   }
 
-  resource networkConfig 'networkConfig' = {
+  resource planNetworkConfig 'networkConfig' = if(!(empty(subnetId))) {
     name: 'virtualNetwork'
     properties: {
-      subnetResourceId: vnet.properties.subnets[0].id
+      subnetResourceId: subnetId
       swiftSupported: true
     }
-  }
-
-  dependsOn: [
-    vnet
-  ]
-}
-
-resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
-  name: appInsightsName
-  location: location
-  kind: 'web'
-  properties: {
-    Application_Type: 'web'
   }
 }
 
@@ -148,8 +125,8 @@ resource miRoleAssign 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   }
 }
 
-resource vnet 'Microsoft.Network/virtualNetworks@2021-05-01' existing = {
-  name: vnetName
+resource storageAccount 'Microsoft.Storage/storageAccounts@2021-06-01' existing = {
+  name: storageAccountName
 }
 
 output storageAccountName string = storageAccount.name
