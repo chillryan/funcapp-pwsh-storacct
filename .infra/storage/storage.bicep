@@ -38,14 +38,14 @@ resource storage 'Microsoft.Storage/storageAccounts@2021-02-01' = {
   }
 }
 
-module queueStorageEndpoint '../network/storagePE.bicep' = if(!empty(privateLinkSubnetId)) {
+module queueStorageEndpoint '../network/privateEndpoint.bicep' = if(!empty(privateLinkSubnetId)) {
   name: queueEPName
   params: {
     location: location
-    groupId: 'queue'
+    groupId: 'queue.core'
     privateDnsZoneName: 'queueDnsZone'
     privateEndpointName: queueEPName
-    storageAccount: storage.name
+    privateLinkResourceId: storage.id
     subnetId: privateLinkSubnetId
     vnetId: vnetId
   }

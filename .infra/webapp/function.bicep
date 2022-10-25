@@ -1,5 +1,7 @@
+param vnetId string
 param subnetId string
 param storageAccountName string
+param privateLinkSubnetId string
 param location string = resourceGroup().location
 param appName string = uniqueString(resourceGroup().id)
 param contentShareName string = '${appName}-content'
@@ -12,10 +14,9 @@ param contentShareName string = '${appName}-content'
 ])
 param functionAppPlanSku string = 'EP1'
 
-
 var hostPlanNmae = 'plan-${appName}-${location}'
-var functionAppName = 'func${appName}'
 var appInsightsName = 'appi${appName}'
+var functionEPName = 'pep${appName}'
 
 resource mi 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
   name: 'id${appName}'
@@ -42,7 +43,7 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
 }
 
 resource function 'Microsoft.Web/sites@2020-12-01' = {
-  name: functionAppName
+  name: appName
   location: location
   kind: 'functionapp'
   identity: {
@@ -111,6 +112,19 @@ resource function 'Microsoft.Web/sites@2020-12-01' = {
   }
 }
 
+module functionEndpoint '../network/privateEndpoint.bicep' = if(!empty(privateLinkSubnetId)) {
+  name: functionEPName
+  params: {
+    location: location
+    groupId: 'azurewebsites'
+    privateDnsZoneName: 'webDnzZone'
+    privateEndpointName: functionEPName
+    privateLinkResourceId: function.id
+    subnetId: privateLinkSubnetId
+    vnetId: vnetId
+  }
+}
+
 // See https://docs.microsoft.com/azure/role-based-access-control/built-in-roles#contributor'
 var roleDefinitionId = resourceId('Microsoft.Authorization/roleDefinitions', '974c5e8b-45b9-4653-ba55-5f855dd0fb88')
 var roleAssignmentName = guid(resourceGroup().id, mi.name, roleDefinitionId)
@@ -129,5 +143,4 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-06-01' existing 
   name: storageAccountName
 }
 
-output storageAccountName string = storageAccount.name
 output functionAppName string = function.name

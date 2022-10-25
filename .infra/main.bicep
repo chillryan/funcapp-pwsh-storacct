@@ -17,7 +17,7 @@ module network 'network/vnet.bicep' = {
   name: vnetName
   params: {
    location: location
-   vnetName: vnetName    
+   vnetName: vnetName   
   }
 }
 
@@ -33,7 +33,7 @@ module storage 'storage/storage.bicep' = {
   }
 }
 
-module functionApp 'webapp/func.bicep' = {
+module functionApp 'webapp/function.bicep' = {
   scope: newRG
   name: appName
   dependsOn: [
@@ -41,7 +41,10 @@ module functionApp 'webapp/func.bicep' = {
   ]
   params: {
     location: location
+    appName: appName
     storageAccountName: storageAccountName
     subnetId: network.outputs.paasSubNetId
+    privateLinkSubnetId: network.outputs.privateLinkSubnetId
+    vnetId: network.outputs.vnetId
   }
 }

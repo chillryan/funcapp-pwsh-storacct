@@ -3,7 +3,7 @@ param privateEndpointName string
 param groupId string
 param zoneName string
 param standardDomain string = 'windows.net'
-param domain string = 'privatelink.${groupId}.core.${standardDomain}'
+param domain string = 'privatelink.${groupId}.${standardDomain}'
 
 var zoneGroupName = 'dzg${groupId}'
 

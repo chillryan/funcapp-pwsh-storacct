@@ -2,8 +2,8 @@ param privateEndpointName string
 param location string
 param vnetId string
 param subnetId string
-param storageAccount string
 param groupId string
+param privateLinkResourceId string
 param privateDnsZoneName string
 
 resource privateEndpoint 'Microsoft.Network/privateEndpoints@2021-03-01' = {
@@ -17,7 +17,7 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2021-03-01' = {
       {
         name: privateEndpointName
         properties: {
-          privateLinkServiceId: storage.id
+          privateLinkServiceId: privateLinkResourceId
           groupIds: [
             groupId
           ]
@@ -36,12 +36,8 @@ module dnsZone '../dns/dnsZone.bicep' = {
     groupId: groupId
     privateEndpointName: privateEndpointName
     vnetId: vnetId
-    zoneName: storageAccount
+    zoneName: privateLinkResourceId
   }
-}
-
-resource storage 'Microsoft.Storage/storageAccounts@2021-06-01' existing = {
-  name: storageAccount
 }
 
 output privateEndpointId string = privateEndpoint.id
