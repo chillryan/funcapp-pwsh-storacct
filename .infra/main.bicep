@@ -2,6 +2,7 @@ targetScope = 'subscription'
 
 param resourceGroupName string = 'azfuncpwshpoc'
 param location string
+param createPrivateEndpoint bool = false
 
 resource newRG 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: 'rg-${resourceGroupName}'
@@ -31,7 +32,7 @@ module storage 'storage/storage.bicep' = {
     fileShareName: '${appName}-contents'
     location: location
     name: storageAccountName
-    privateLinkSubnetId: network.outputs.privateLinkSubnetId
+    privateLinkSubnetId: createPrivateEndpoint ? network.outputs.privateLinkSubnetId : ''
     vnetId: network.outputs.vnetId
   }
 }
@@ -47,7 +48,11 @@ module functionApp 'webapp/function.bicep' = {
     appName: appName
     storageAccountName: storageAccountName
     subnetId: network.outputs.paasSubNetId
-    privateLinkSubnetId: network.outputs.privateLinkSubnetId
+    privateLinkSubnetId: createPrivateEndpoint ? network.outputs.privateLinkSubnetId : ''
     vnetId: network.outputs.vnetId
   }
 }
+
+output virtualNetworkId string = network.outputs.vnetId
+output privateLinkSubnetId string = network.outputs.privateLinkSubnetId
+output storageId string = storage.outputs.storageId
