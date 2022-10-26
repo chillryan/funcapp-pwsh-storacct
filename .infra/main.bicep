@@ -10,7 +10,7 @@ resource newRG 'Microsoft.Resources/resourceGroups@2021-04-01' = {
 
 var appName = 'func${uniqueString(newRG.id)}'
 var vnetName = 'vnet-${uniqueString(newRG.id)}'
-var storageAccountName = replace('stor${uniqueString(newRG.id)}','-','')
+var storageAccountName = 'stor${uniqueString(newRG.id)}'
 
 module network 'network/vnet.bicep' = {
   scope: newRG
@@ -23,7 +23,10 @@ module network 'network/vnet.bicep' = {
 
 module storage 'storage/storage.bicep' = {
   scope: newRG
-  name: storageAccountName
+  name: replace(storageAccountName,'-','')
+  dependsOn: [
+    network
+  ]
   params: {
     fileShareName: '${appName}-contents'
     location: location

@@ -1,14 +1,14 @@
 param privateDnsZoneId string
 param privateEndpointName string
 param groupId string
-param zoneName string
+param dnsZoneName string
 
-resource DnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-05-01' = {
+resource dnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-05-01' = {
   name: '${privateEndpointName}/default'
   properties: {
     privateDnsZoneConfigs: [
       {      
-        name: '${zoneName}-${groupId}-core-windows-net'
+        name: '${dnsZoneName}-${groupId}-core-windows-net'
         properties: {
           privateDnsZoneId: privateDnsZoneId          
         }
@@ -17,4 +17,4 @@ resource DnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2
   }
 }
 
-output dnsZoneGroupId string = DnsZoneGroup.id
+output dnsZoneGroupId string = dnsZoneGroup.id

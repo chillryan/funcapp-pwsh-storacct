@@ -1,19 +1,17 @@
 param vnetId string
 param privateEndpointName string
 param groupId string
-param zoneName string
-param standardDomain string = 'windows.net'
-param domain string = 'privatelink.${groupId}.${standardDomain}'
+param dnsZoneName string
 
 var zoneGroupName = 'dzg${groupId}'
 
-resource dnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
-  name: domain
+resource privateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
+  name: dnsZoneName
   location: 'global'
 }
 
-resource vnetLinks 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
-  name: '${domain}/${uniqueString(vnetId)}'
+resource privateDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
+  name: '${dnsZoneName}/${uniqueString(vnetId)}'
   location: 'global'
   properties: {
     virtualNetwork: {
@@ -22,23 +20,23 @@ resource vnetLinks 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-0
     registrationEnabled: false
   }
   dependsOn: [
-    dnsZone
+    privateDnsZone
   ]
 }
 
 module dnsZoneGroup 'dnsZoneGroups.bicep' = {
   name: zoneGroupName
   dependsOn: [
-    vnetLinks
+    privateDnsZoneLink
   ]
   params: {
     groupId: groupId
-    privateDnsZoneId: dnsZone.id
+    dnsZoneName: dnsZoneName
+    privateDnsZoneId: privateDnsZone.id
     privateEndpointName: privateEndpointName
-    zoneName: zoneName
   }
 }
 
-output dnsZoneId string = dnsZone.id
+output dnsZoneId string = privateDnsZone.id
 output dnsZoneGroupId string = dnsZoneGroup.outputs.dnsZoneGroupId
-output vnetLinksLink string = vnetLinks.id
+output vnetLinksLink string = privateDnsZoneLink.id

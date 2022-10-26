@@ -116,8 +116,8 @@ module functionEndpoint '../network/privateEndpoint.bicep' = if(!empty(privateLi
   name: functionEPName
   params: {
     location: location
-    groupId: 'azurewebsites'
-    privateDnsZoneName: 'webDnzZone'
+    groupId: 'sites'
+    privateDnsZoneName: 'privatelink.azurewebsites.net'
     privateEndpointName: functionEPName
     privateLinkResourceId: function.id
     subnetId: privateLinkSubnetId

@@ -33,10 +33,10 @@ module dnsZone '../dns/dnsZone.bicep' = {
     privateEndpoint
   ]
   params: {
+    dnsZoneName: privateDnsZoneName
     groupId: groupId
     privateEndpointName: privateEndpointName
     vnetId: vnetId
-    zoneName: privateLinkResourceId
   }
 }
 

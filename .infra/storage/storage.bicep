@@ -42,8 +42,8 @@ module queueStorageEndpoint '../network/privateEndpoint.bicep' = if(!empty(priva
   name: queueEPName
   params: {
     location: location
-    groupId: 'queue.core'
-    privateDnsZoneName: 'queueDnsZone'
+    groupId: 'queue'
+    privateDnsZoneName: 'privatelink.queue.${environment().suffixes.storage}'
     privateEndpointName: queueEPName
     privateLinkResourceId: storage.id
     subnetId: privateLinkSubnetId
