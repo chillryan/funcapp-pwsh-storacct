@@ -33,15 +33,6 @@ resource hostingPlan 'Microsoft.Web/serverfarms@2020-12-01' = {
   properties: {}
 }
 
-resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
-  name: appInsightsName
-  location: location
-  kind: 'web'
-  properties: {
-    Application_Type: 'web'
-  }
-}
-
 resource function 'Microsoft.Web/sites@2020-12-01' = {
   name: appName
   location: location
@@ -83,11 +74,11 @@ resource function 'Microsoft.Web/sites@2020-12-01' = {
         }
         {
           name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-          value: appInsights.properties.InstrumentationKey
+          value: appInsights.outputs.InstrumentationKey
         }
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: 'InstrumentationKey=${appInsights.properties.InstrumentationKey}'
+          value: 'InstrumentationKey=${appInsights.outputs.InstrumentationKey}'
         }
         {
           name: 'FUNCTIONS_EXTENSION_VERSION'
@@ -100,6 +91,7 @@ resource function 'Microsoft.Web/sites@2020-12-01' = {
       ]
       powerShellVersion: '7.2'
       vnetRouteAllEnabled: true
+      ftpsState: 'FtpsOnly'
     }
   }
 
@@ -109,6 +101,14 @@ resource function 'Microsoft.Web/sites@2020-12-01' = {
       subnetResourceId: subnetId
       swiftSupported: true
     }
+  }
+}
+
+module appInsights '../monitoring/appInsights.bicep' = {
+  name: appInsightsName
+  params: {
+    appInsightsName: appInsightsName
+    location: location
   }
 }
 
